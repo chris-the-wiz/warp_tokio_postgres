@@ -234,13 +234,16 @@ async fn todo_delete_test()-> Result<(), TestError>
 /// 
 #[tokio::main]
 #[test] // modify record: add a record. modify check if differs 
-async fn stores_graphql_query_test()-> Result<(), TestError>
+async fn stores_graphql_test()-> Result<(), TestError>
 {
    let client = setup_client();
     //get the number of records
    
 
-    let mut resp   =stores_graphql_query_inner(&client).await?;
+    stores_graphql_mutation_inner(&client).await?;
+  
+
+    stores_graphql_query_inner(&client).await?;
   
    
 
@@ -256,18 +259,86 @@ async fn stores_graphql_query_test()-> Result<(), TestError>
     Ok(())
 }
 
+
+
+async fn stores_graphql_mutation_inner(client:&Client)
+//-> Result<StringStruct, TestError>
+-> Result<(), TestError>
+{
+    
+    #[allow(dead_code)]
+    #[derive(Debug, Deserialize)]
+    struct Data {
+        data: CreateStoreResponse,
+    }
+    
+    
+    #[allow(dead_code)]
+    #[derive(Debug, Deserialize)]
+    struct CreateStoreResponse {
+        createStore: CreateStoreStruct,
+    }
+    
+    #[allow(dead_code)]
+    #[derive(Debug, Deserialize)]
+    struct CreateStoreStruct {
+        id: i32,
+        name: String,
+        clients: i32,
+    }
+    
+    let q = "{\"query\":\"mutation {createStore (name: \\\"biedra\\\", clients: 900) {  id name clients }}\"}";
+    
+    let response = client.post("http://127.0.0.1:8000/store/" )
+    .body(q)
+    .send().await?;
+    let resp = response.text().await?;  
+    let _parsed_resp: Data  = serde_json::from_str(&resp).unwrap_or_else(
+        |err|    panic!("Error: {}", err)
+    );
+   
+  
+   Ok(())
+   
+}  
+
+
+
+
 async fn stores_graphql_query_inner(client:&Client)
 //-> Result<StringStruct, TestError>
 -> Result<(), TestError>
 {
-   
-    let response = client.put("http://127.0.0.1:8000/stores/" )
-    .body(
-        "query {
-            getAllStores{ id, name, clients}    
-        }")
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct Store {
+        id: i32,
+    }
+    #[allow(dead_code)]
+    #[derive( Deserialize)]
+    struct Data {
+        getAllStores: Vec<Store>,
+    }
+    #[allow(dead_code)]
+    #[derive( Deserialize)]
+    struct Response {
+        data: Data,
+    }
+
+    let response = client.post("http://127.0.0.1:8000/store/" )
+    .body("
+    {
+        \"query\":\"{getAllStores {id}}\"
+        }
+            
+    
+    ")
     .send().await?;
     let resp = response.text().await?;  
+    let parsed_resp: Response  = serde_json::from_str(&resp).unwrap_or_else(
+        |err|    panic!("Error: {}", err)
+    );
+   
    // let out:Store = async_graphql_warp::GraphQLResponse::from(resp);
      
     //let out: StringStruct = StringStruct{s: out};
