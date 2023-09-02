@@ -14,6 +14,9 @@ use anyhow::{Error  as AnyhowError };
 use thiserror::Error as ThisError;
 
 
+use crate::db_requests::store::Store;
+
+
 #[derive(ThisError, Debug)]
 enum TestError {
    // #[error("error creating request: {0}")]
@@ -222,4 +225,55 @@ async fn todo_delete_test()-> Result<(), TestError>
 
     Ok(())
 }
+
+
+
+
+/////////////////
+/// 
+/// 
+#[tokio::main]
+#[test] // modify record: add a record. modify check if differs 
+async fn stores_graphql_query_test()-> Result<(), TestError>
+{
+   let client = setup_client();
+    //get the number of records
+   
+
+    let mut resp   =stores_graphql_query_inner(&client).await?;
+  
+   
+
+    
+   
+   // assert!(deserialized_a[0].id==deserialized_b[0].id);
+    //assert!(deserialized_a[0].name!=deserialized_b[0].name);
+   // assert!(deserialized_a[0].checked!=deserialized_b[0].checked);
+
+
+
+
+    Ok(())
+}
+
+async fn stores_graphql_query_inner(client:&Client)
+//-> Result<StringStruct, TestError>
+-> Result<(), TestError>
+{
+   
+    let response = client.put("http://127.0.0.1:8000/stores/" )
+    .body(
+        "query {
+            getAllStores{ id, name, clients}    
+        }")
+    .send().await?;
+    let resp = response.text().await?;  
+   // let out:Store = async_graphql_warp::GraphQLResponse::from(resp);
+     
+    //let out: StringStruct = StringStruct{s: out};
+   // Ok(out)
+   Ok(())
+   
+}  
+
 

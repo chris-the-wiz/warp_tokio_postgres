@@ -5,7 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 pub struct Todo {
     pub id: i32,
     pub name: String,
-    pub created_at: DateTime<Utc>,
+    pub created_at: Option<DateTime<Utc>>,
     pub checked: bool,
 }
 

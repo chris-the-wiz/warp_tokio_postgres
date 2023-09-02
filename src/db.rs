@@ -140,7 +140,7 @@ pub async fn delete_todo(db_pool: &DBPool, id: i32) -> DbResult<u64> {
 fn row_to_todo(row: &Row) -> Todo {
     let id: i32 = row.get(0);
     let name: String = row.get(1);
-    let created_at: DateTime<Utc> = row.get(2);
+    let created_at: Option<DateTime<Utc>> = row.get(2);
     let checked: bool = row.get(3);
     Todo {
             id,

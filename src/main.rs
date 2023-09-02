@@ -2,14 +2,20 @@ use mobc::{Connection, Pool};
 use mobc_postgres::{tokio_postgres, PgConnectionManager};
 use std::convert::Infallible;
 use tokio_postgres::NoTls;
-use warp::{Filter, Rejection};
+use warp::{Filter, Rejection, http::Response};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing;
+use sqlx::PgPool;
+
+use async_graphql::{Schema, Request, http::playground_source, http::GraphQLPlaygroundConfig};
 
 mod data;
 mod db;
 mod error;
 mod handler;
+
+mod gql_schema;
+mod db_requests;
 
 #[cfg(test)]
 pub mod tests;  
@@ -23,6 +29,12 @@ type DBPool = Pool<PgConnectionManager<NoTls>>;
 fn with_db(db_pool: DBPool) -> impl Filter<Extract = (DBPool,), Error = Infallible> + Clone {
     warp::any().map(move || db_pool.clone())
 }
+
+
+pub async  fn create_connection_pool() -> PgPool {
+    PgPool::connect("postgres://postgres:postgres@127.0.0.1:5432/postgres").await.unwrap()
+}
+
 
 #[tokio::main]
 async fn main() {
@@ -65,18 +77,40 @@ async fn main() {
         .and(with_db(db_pool.clone()))
         .and_then(handler::delete_todo_handler));
 
-    // .or(todo
-    //    .and(warp::get())
-    //    .and(warp::path::param())
-    //    .and(warp::query())
-    //    .and(with_db(db_pool.clone()))
-    //    .and_then(handler::list_single_todo_handler))
+
+
+
+    let schema = gql_schema::build_schema(create_connection_pool().await).finish();
+
+    let store = warp::path("store");
+
+    let store_routes = 
+    store
+            .and(warp::post())
+            .and(async_graphql_warp::graphql(schema))
+            .and_then( | (schema, request): (Schema<_,_,_>, Request)| async move {
+            let response = schema
+                .execute(request).await;
+
+            Ok::<_, Infallible>(async_graphql_warp::GraphQLResponse::from(response))
+        });
+
+    
+    //GraphQL Playground
+    let graphql_playground =  warp::path("graphql").map(||{
+        Response::builder()
+            .header("content-type", "text/html")
+            .body(playground_source(GraphQLPlaygroundConfig::new("/store")))
+    });
+
 
 
 
     let routes =
      health_route
     .or(todo_routes)
+    .or(store_routes)
+    .or(graphql_playground)
     .with(warp::cors().allow_any_origin().allow_methods(vec!["GET", "POST", "DELETE", "PUT"]))
     .recover(error::handle_rejection);
      

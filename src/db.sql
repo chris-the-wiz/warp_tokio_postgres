@@ -6,3 +6,9 @@ CREATE TABLE IF NOT EXISTS todo
     checked boolean DEFAULT false
 );
 
+CREATE TABLE IF NOT EXISTS stores
+(
+    id SERIAL PRIMARY KEY NOT NULL,
+    name VARCHAR(255),
+    clients integer
+);

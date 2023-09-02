@@ -9,5 +9,6 @@
       "database": "postgres",
       "username": "postgres"
     }
-  ]
+  ],
+  "rust-analyzer.showUnlinkedFileNotification": false
 }
